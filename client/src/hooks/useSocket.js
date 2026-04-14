@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 
+const defaultSocketUrl = import.meta.env.DEV
+  ? 'http://localhost:5000'
+  : 'https://auction-bu05.onrender.com';
+
 export const useSocket = (token) => {
   const [connected, setConnected] = useState(false);
 
   const socket = useMemo(
     () =>
-      io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
+      io(import.meta.env.VITE_SOCKET_URL || defaultSocketUrl, {
         autoConnect: true,
         transports: ['websocket', 'polling'],
         auth: token ? { token } : {}
@@ -30,4 +34,3 @@ export const useSocket = (token) => {
 
   return { socket, connected };
 };
-
