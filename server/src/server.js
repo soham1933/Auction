@@ -13,13 +13,38 @@ import { registerAuctionHandlers } from './sockets/auctionHandler.js';
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
-  : ['https://auction-8jdb-cw2zbgojb-soham-bandbes-projects.vercel.app/'];
+const configuredOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
+  : [];
+
+const localhostPattern = /^https?:\/\/localhost:\d+$/;
+const vercelPattern = /^https:\/\/.*\.vercel\.app$/;
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  const normalizedOrigin = origin.replace(/\/$/, '');
+
+  if (configuredOrigins.includes(normalizedOrigin)) {
+    return true;
+  }
+
+  if (localhostPattern.test(normalizedOrigin)) {
+    return true;
+  }
+
+  if (vercelPattern.test(normalizedOrigin)) {
+    return true;
+  }
+
+  return false;
+};
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
       return;
     }
