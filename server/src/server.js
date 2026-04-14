@@ -57,7 +57,7 @@ const port = Number(process.env.PORT || 5000);
 
 connectDB()
   .then(() => {
-    if (!process.env.JWT_SECRET) {
+    if (!process.env.JWT_SECRET ) {
       console.warn(
         'JWT_SECRET is not set. Using a local development fallback secret. Configure server/.env for production.'
       );

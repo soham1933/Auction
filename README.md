@@ -107,3 +107,4 @@ If the database is empty, demo captains and players are seeded automatically on 
 - Serve the backend over HTTPS so Socket.io upgrades to `wss`
 - Seed captains and players through the UI or REST endpoints
 - For larger events, place MongoDB on Atlas and enable indexes
+- Default bid increment is `10` points unless overridden with `MIN_BID_INCREMENT`

@@ -28,7 +28,7 @@ const AuctionRoom = () => {
   const [formData, setFormData] = useState({ name: '', password: '' });
 
   const isCaptain = user?.role === 'captain';
-  const minIncrement = 100;
+  const minIncrement = 10;
 
   useEffect(() => {
     const loadInitial = async () => {
