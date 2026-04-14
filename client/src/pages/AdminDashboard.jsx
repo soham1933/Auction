@@ -21,7 +21,7 @@ const AdminDashboard = () => {
   const [captains, setCaptains] = useState([]);
   const [teams, setTeams] = useState([]);
   const [auction, setAuction] = useState(null);
-  const [duration, setDuration] = useState(30);
+  const [duration, setDuration] = useState(300);
   const [message, setMessage] = useState('');
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [playerForm, setPlayerForm] = useState(initialPlayer);
@@ -228,14 +228,16 @@ const AdminDashboard = () => {
             <label className="text-sm text-white/60">Countdown Duration</label>
             <input
               type="range"
-              min="15"
-              max="90"
-              step="5"
+              min="60"
+              max="300"
+              step="30"
               value={duration}
               onChange={(event) => setDuration(Number(event.target.value))}
               className="mt-3 w-full accent-cyan"
             />
-            <p className="mt-2 text-lg font-semibold text-white">{duration} seconds</p>
+            <p className="mt-2 text-lg font-semibold text-white">
+              {Math.floor(duration / 60)}m {duration % 60}s
+            </p>
             <p className="mt-2 text-sm text-white/55">
               After the timer ends, bidding freezes and the admin decides whether to sell or close.
             </p>
@@ -538,15 +540,40 @@ const AdminDashboard = () => {
                       {team.playersBought} bought • Budget {formatPoints(team.budget)}
                     </p>
                   </div>
+                  <div className="text-right text-sm text-white/55">
+                    <p>Spent</p>
+                    <p className="font-semibold text-white">{formatPoints(team.totalSpent)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-white/70">
+                  <div className="rounded-2xl bg-white/5 p-3">
+                    <p>Squad Size</p>
+                    <p className="mt-1 text-lg font-semibold text-white">{team.playersBought}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/5 p-3">
+                    <p>Budget Left</p>
+                    <p className="mt-1 text-lg font-semibold text-white">{formatPoints(team.budget)}</p>
+                  </div>
                 </div>
 
                 <div className="mt-3 space-y-2">
                   {team.players.map((player) => (
                     <div
                       key={player._id}
-                      className="rounded-2xl bg-white/5 px-3 py-2 text-sm text-white/75"
+                      className="rounded-2xl bg-white/5 px-3 py-3 text-sm text-white/75"
                     >
-                      {player.name} • {player.role}
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-white">{player.name}</p>
+                          <p className="text-white/55">
+                            {player.role} • {player.team || player.country || 'Auction Pool'}
+                          </p>
+                        </div>
+                        <div className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+                          {formatPoints(player.basePrice)}
+                        </div>
+                      </div>
                     </div>
                   ))}
 

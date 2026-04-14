@@ -5,6 +5,7 @@ import { getSocketUser } from '../middleware/auth.js';
 
 const AUCTION_ROOM = process.env.AUCTION_ROOM || 'global-auction-room';
 const MIN_BID_INCREMENT = Number(process.env.MIN_BID_INCREMENT || 100);
+const DEFAULT_AUCTION_DURATION = Number(process.env.DEFAULT_AUCTION_DURATION || 300);
 
 let liveAuction = {
   id: null,
@@ -161,7 +162,7 @@ export const registerAuctionHandlers = (io) => {
 
     await emitSnapshot(io, socket);
 
-    socket.on('startAuction', async ({ playerId, duration = 30 }) => {
+    socket.on('startAuction', async ({ playerId, duration = DEFAULT_AUCTION_DURATION }) => {
       try {
         if (socket.data.user?.role !== 'admin') {
           socket.emit('auctionError', 'Only admins can start auctions');

@@ -149,7 +149,7 @@ const AuctionRoom = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-40 xl:pb-0">
       <section className="rounded-[32px] border border-white/10 bg-white/10 p-5 shadow-glow backdrop-blur-md md:p-8">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">

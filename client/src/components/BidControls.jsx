@@ -66,4 +66,3 @@ const BidControls = ({
 };
 
 export default BidControls;
-

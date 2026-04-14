@@ -14,7 +14,7 @@ const TeamView = ({ user }) => {
   }
 
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/10 p-4 shadow-glow backdrop-blur-md">
+    <section className="rounded-[28px] border border-white/10 bg-white/10 p-4 pb-40 shadow-glow backdrop-blur-md xl:pb-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-mint/70">Captain Hub</p>
@@ -43,25 +43,27 @@ const TeamView = ({ user }) => {
           <p className="text-sm text-white/55">{user.players?.length || 0} in squad</p>
         </div>
 
-        {(user.players || []).map((player) => (
-          <motion.div
-            layout
-            key={player._id}
-            className="rounded-2xl border border-white/10 bg-slate-950/30 p-3"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold text-white">{player.name}</p>
-                <p className="text-sm text-white/50">
-                  {player.role} • {player.team || player.country || 'Auction Pool'}
-                </p>
+        <div className="max-h-[24rem] space-y-2 overflow-y-auto pr-1 xl:max-h-[28rem]">
+          {(user.players || []).map((player) => (
+            <motion.div
+              layout
+              key={player._id}
+              className="rounded-2xl border border-white/10 bg-slate-950/30 p-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-white">{player.name}</p>
+                  <p className="text-sm text-white/50">
+                    {player.role} • {player.team || player.country || 'Auction Pool'}
+                  </p>
+                </div>
+                <div className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+                  {formatPoints(player.basePrice)}
+                </div>
               </div>
-              <div className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
-                {formatPoints(player.basePrice)}
-              </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          ))}
+        </div>
 
         {!user.players?.length && (
           <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/50">
