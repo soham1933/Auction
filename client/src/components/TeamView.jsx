@@ -38,16 +38,28 @@ const TeamView = ({ user }) => {
       </div>
 
       <div className="mt-4 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-[0.25em] text-white/45">Bought Players</p>
+          <p className="text-sm text-white/55">{user.players?.length || 0} in squad</p>
+        </div>
+
         {(user.players || []).map((player) => (
           <motion.div
             layout
             key={player._id}
             className="rounded-2xl border border-white/10 bg-slate-950/30 p-3"
           >
-            <p className="font-semibold text-white">{player.name}</p>
-            <p className="text-sm text-white/50">
-              {player.role} • Base {formatPoints(player.basePrice)}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-white">{player.name}</p>
+                <p className="text-sm text-white/50">
+                  {player.role} • {player.team || player.country || 'Auction Pool'}
+                </p>
+              </div>
+              <div className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+                {formatPoints(player.basePrice)}
+              </div>
+            </div>
           </motion.div>
         ))}
 

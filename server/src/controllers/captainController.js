@@ -30,3 +30,17 @@ export const getLeaderboard = async (_req, res) => {
   res.json(leaderboard);
 };
 
+export const getTeamsOverview = async (_req, res) => {
+  const captains = await Captain.find().populate('players').sort({ name: 1 });
+
+  const teams = captains.map((captain) => ({
+    id: captain._id,
+    name: captain.name,
+    budget: captain.budget,
+    totalSpent: captain.totalSpent,
+    playersBought: captain.players.length,
+    players: captain.players
+  }));
+
+  res.json(teams);
+};

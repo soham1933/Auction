@@ -18,6 +18,8 @@ const AdminDashboard = () => {
   const { user, token, loginAdmin } = useAuth();
   const { socket, connected } = useSocket(token);
   const [players, setPlayers] = useState([]);
+  const [captains, setCaptains] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [auction, setAuction] = useState(null);
   const [duration, setDuration] = useState(30);
   const [message, setMessage] = useState('');
@@ -27,13 +29,35 @@ const AdminDashboard = () => {
   const isAdmin = user?.role === 'admin';
 
   const loadPlayers = async () => {
-    const { data } = await api.get('/players');
-    setPlayers(data);
+    try {
+      const { data } = await api.get('/players');
+      setPlayers(data);
+    } catch (_error) {
+      setPlayers([]);
+    }
+  };
+
+  const loadCaptainsAndTeams = async () => {
+    try {
+      const [captainsResponse, teamsResponse] = await Promise.all([
+        api.get('/captains'),
+        api.get('/captains/teams')
+      ]);
+
+      setCaptains(captainsResponse.data);
+      setTeams(teamsResponse.data);
+    } catch (_error) {
+      setCaptains([]);
+      setTeams([]);
+    }
   };
 
   useEffect(() => {
     loadPlayers();
-  }, []);
+    if (isAdmin) {
+      loadCaptainsAndTeams();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     const onSnapshot = ({ auction: nextAuction }) => setAuction(nextAuction);
@@ -52,6 +76,7 @@ const AdminDashboard = () => {
     const onPlayerSold = async () => {
       setMessage('Player sold successfully');
       await loadPlayers();
+      await loadCaptainsAndTeams();
     };
     const onTimerUpdate = ({ timeLeft, status }) =>
       setAuction((prev) => (prev ? { ...prev, timeLeft, status: status || prev.status } : prev));
@@ -116,6 +141,8 @@ const AdminDashboard = () => {
   const isLiveAuction = auction?.status === 'live';
   const isAwaitingClose = auction?.status === 'awaiting-close';
   const bidHistory = auction?.bidHistory || [];
+  const soldPlayers = players.filter((player) => player.status === 'sold');
+  const availablePlayers = players.filter((player) => player.status === 'available');
 
   if (!isAdmin) {
     return (
@@ -390,6 +417,147 @@ const AdminDashboard = () => {
                 Add players from the panel on the left to begin the auction.
               </div>
             )}
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <section className="rounded-[32px] border border-white/10 bg-white/10 p-5 shadow-glow backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-mint/70">Captains</p>
+              <h3 className="mt-2 text-2xl font-semibold text-white">All captain accounts</h3>
+            </div>
+            <div className="rounded-full bg-white/10 px-3 py-1 text-sm text-white/70">
+              {captains.length}
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {captains.map((captain) => (
+              <div
+                key={captain._id}
+                className="rounded-3xl border border-white/10 bg-slate-950/30 p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-lg font-semibold text-white">{captain.name}</p>
+                  <p className="text-sm text-white/55">
+                    {captain.players?.length || 0} players
+                  </p>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-white/60">
+                  <div className="rounded-2xl bg-white/5 p-3">
+                    Budget
+                    <p className="mt-1 text-base font-semibold text-white">
+                      {formatPoints(captain.budget)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/5 p-3">
+                    Spent
+                    <p className="mt-1 text-base font-semibold text-white">
+                      {formatPoints(captain.totalSpent)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {!captains.length && (
+              <div className="rounded-3xl border border-dashed border-white/10 p-4 text-sm text-white/50">
+                No captains found yet.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[32px] border border-white/10 bg-white/10 p-5 shadow-glow backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-cyan/80">All Players</p>
+              <h3 className="mt-2 text-2xl font-semibold text-white">Player inventory</h3>
+            </div>
+            <div className="rounded-full bg-white/10 px-3 py-1 text-sm text-white/70">
+              {players.length}
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-3 text-sm text-white/70">
+            <div className="rounded-3xl bg-slate-950/30 p-4">
+              <p>Available</p>
+              <p className="mt-1 text-2xl font-semibold text-white">{availablePlayers.length}</p>
+            </div>
+            <div className="rounded-3xl bg-slate-950/30 p-4">
+              <p>Sold</p>
+              <p className="mt-1 text-2xl font-semibold text-white">{soldPlayers.length}</p>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {players.map((player) => (
+              <div
+                key={player._id}
+                className="rounded-3xl border border-white/10 bg-slate-950/30 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">{player.name}</p>
+                    <p className="text-sm text-white/50">
+                      {player.role} • {player.team || player.country || 'Auction Pool'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+                    {player.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-[32px] border border-white/10 bg-white/10 p-5 shadow-glow backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold/70">Teams</p>
+              <h3 className="mt-2 text-2xl font-semibold text-white">All team data</h3>
+            </div>
+            <div className="rounded-full bg-white/10 px-3 py-1 text-sm text-white/70">
+              {teams.length}
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {teams.map((team) => (
+              <div
+                key={team.id}
+                className="rounded-3xl border border-white/10 bg-slate-950/30 p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-semibold text-white">{team.name}</p>
+                    <p className="text-sm text-white/55">
+                      {team.playersBought} bought • Budget {formatPoints(team.budget)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {team.players.map((player) => (
+                    <div
+                      key={player._id}
+                      className="rounded-2xl bg-white/5 px-3 py-2 text-sm text-white/75"
+                    >
+                      {player.name} • {player.role}
+                    </div>
+                  ))}
+
+                  {!team.players.length && (
+                    <div className="rounded-2xl border border-dashed border-white/10 px-3 py-3 text-sm text-white/45">
+                      No players bought yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </div>
