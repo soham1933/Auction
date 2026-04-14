@@ -15,7 +15,7 @@ const app = express();
 const server = http.createServer(app);
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
-  : ['http://localhost:5173', 'http://localhost:5174'];
+  : ['https://auction-8jdb-cw2zbgojb-soham-bandbes-projects.vercel.app/'];
 
 const corsOptions = {
   origin(origin, callback) {
