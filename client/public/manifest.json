@@ -1,0 +1,24 @@
+{
+  "name": "Cricket Auction",
+  "short_name": "Auction",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#04111d",
+  "theme_color": "#04111d",
+  "description": "Real-time mobile-first cricket auction application",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
+
