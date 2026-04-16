@@ -28,6 +28,14 @@ const playerSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    avatarUrl: {
+      type: String,
+      default: ''
+    },
+    bannerUrl: {
+      type: String,
+      default: ''
+    },
     status: {
       type: String,
       enum: ['available', 'sold', 'unsold'],

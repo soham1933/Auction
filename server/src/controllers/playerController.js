@@ -10,16 +10,26 @@ export const listPlayers = async (_req, res) => {
 export const createPlayer = async (req, res) => {
   const player = await Player.create(req.body);
 
-  if (player.imageUrl) {
+  const prismaImageUrl = player.avatarUrl || player.bannerUrl || player.imageUrl;
+  if (prismaImageUrl) {
     try {
       const prisma = getPrisma();
       await prisma.playerImage.upsert({
         where: { playerId: player._id.toString() },
-        create: { playerId: player._id.toString(), imageUrl: player.imageUrl },
-        update: { imageUrl: player.imageUrl }
+        create: {
+          playerId: player._id.toString(),
+          imageUrl: prismaImageUrl,
+          avatarUrl: player.avatarUrl,
+          bannerUrl: player.bannerUrl
+        },
+        update: {
+          imageUrl: prismaImageUrl,
+          avatarUrl: player.avatarUrl,
+          bannerUrl: player.bannerUrl
+        }
       });
     } catch (_error) {
-      // If Prisma isn't configured yet, the app should still work using Mongoose's imageUrl field.
+      // If Prisma isn't configured yet, the app should still work using Mongoose fields.
     }
   }
 
@@ -35,13 +45,23 @@ export const updatePlayer = async (req, res) => {
     return res.status(404).json({ message: 'Player not found' });
   }
 
-  if (typeof player.imageUrl === 'string' && player.imageUrl.length > 0) {
+  const prismaImageUrl = player.avatarUrl || player.bannerUrl || player.imageUrl;
+  if (typeof prismaImageUrl === 'string' && prismaImageUrl.length > 0) {
     try {
       const prisma = getPrisma();
       await prisma.playerImage.upsert({
         where: { playerId: player._id.toString() },
-        create: { playerId: player._id.toString(), imageUrl: player.imageUrl },
-        update: { imageUrl: player.imageUrl }
+        create: {
+          playerId: player._id.toString(),
+          imageUrl: prismaImageUrl,
+          avatarUrl: player.avatarUrl,
+          bannerUrl: player.bannerUrl
+        },
+        update: {
+          imageUrl: prismaImageUrl,
+          avatarUrl: player.avatarUrl,
+          bannerUrl: player.bannerUrl
+        }
       });
     } catch (_error) {
       // ok

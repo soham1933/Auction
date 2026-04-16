@@ -227,6 +227,20 @@ const AuctionRoom = () => {
               )}
             </div>
 
+            {(auction.currentPlayer?.avatarUrl || auction.currentPlayer?.imageUrl) && (
+              <div className="mt-6 flex items-center gap-4 rounded-[28px] border border-white/10 bg-slate-950/30 p-4">
+                <img
+                  src={auction.currentPlayer.avatarUrl || auction.currentPlayer.imageUrl}
+                  alt={`${auction.currentPlayer.name} avatar`}
+                  className="h-20 w-20 rounded-full object-cover"
+                />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">Captain avatar</p>
+                  <p className="mt-2 text-lg font-semibold text-white">{auction.currentPlayer.name}</p>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               <div className="rounded-3xl bg-slate-950/30 p-4">
                 <p className="text-sm text-white/50">Role</p>
@@ -333,6 +347,7 @@ const AuctionRoom = () => {
         auction={auction}
         open={popupOpen}
         onClose={() => setPopupOpen(false)}
+        imageVariant="avatar"
       />
 
       {showBidControls ? (

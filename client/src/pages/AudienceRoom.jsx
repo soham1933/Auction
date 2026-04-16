@@ -153,9 +153,9 @@ const AudienceRoom = () => {
           <div className={`rounded-full px-4 py-2 text-sm font-semibold ${connected ? 'bg-mint/10 text-mint' : 'bg-coral/10 text-coral'}`}>
             {connected ? 'Live connected' : 'Reconnecting'}
           </div>
-          {auction.currentPlayer?.imageUrl ? (
+          {auction.currentPlayer?.bannerUrl || auction.currentPlayer?.imageUrl ? (
             <div className="rounded-full bg-white/10 px-4 py-2 text-sm text-white/70">
-              Player image loaded
+              Audience banner image loaded
             </div>
           ) : (
             <div className="rounded-full bg-white/10 px-4 py-2 text-sm text-white/70">
@@ -204,10 +204,10 @@ const AudienceRoom = () => {
             </button>
           </div>
 
-          {auction.currentPlayer?.imageUrl && (
+          {(auction.currentPlayer?.bannerUrl || auction.currentPlayer?.imageUrl) && (
             <div className="mt-6 overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/30">
               <img
-                src={auction.currentPlayer.imageUrl}
+                src={auction.currentPlayer.bannerUrl || auction.currentPlayer.imageUrl}
                 alt={auction.currentPlayer.name}
                 className="h-72 w-full object-cover md:h-96"
                 loading="lazy"
@@ -224,6 +224,7 @@ const AudienceRoom = () => {
         auction={auction}
         open={popupOpen}
         onClose={() => setPopupOpen(false)}
+        imageVariant="banner"
       />
     </div>
   );

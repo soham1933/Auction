@@ -1,7 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { formatPoints } from '../utils/currency';
 
-const PlayerPopup = ({ player, auction, open, onClose }) => {
+const PlayerPopup = ({ player, auction, open, onClose, imageVariant = 'banner' }) => {
+  const playerImageUrl =
+    imageVariant === 'avatar'
+      ? player.avatarUrl || player.imageUrl || player.bannerUrl
+      : player.bannerUrl || player.imageUrl || player.avatarUrl;
+
   return (
     <AnimatePresence>
       {open && player && (
@@ -27,6 +32,19 @@ const PlayerPopup = ({ player, auction, open, onClose }) => {
             </button>
 
             <div className="flex h-full flex-col justify-between">
+              {playerImageUrl ? (
+                <div className="mb-6 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/20">
+                  <img
+                    src={playerImageUrl}
+                    alt={player.name}
+                    className="h-52 w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="mb-6 flex h-52 items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-slate-950/10 text-sm text-white/50">
+                  No player image available
+                </div>
+              )}
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-cyan/80">
                   On The Block

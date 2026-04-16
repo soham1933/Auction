@@ -11,6 +11,8 @@ const initialPlayer = {
   basePrice: '',
   team: '',
   country: '',
+  avatarUrl: '',
+  bannerUrl: '',
   imageUrl: ''
 };
 
@@ -414,7 +416,7 @@ const AdminDashboard = () => {
               <p className="text-xs uppercase tracking-[0.3em] text-gold/70">Add Player</p>
               <h3 className="mt-2 text-xl font-semibold text-white">Create auction inventory</h3>
             </div>
-            {['name', 'role', 'team', 'country', 'imageUrl', 'basePrice'].map((field) => (
+            {['name', 'role', 'team', 'country', 'avatarUrl', 'bannerUrl', 'imageUrl', 'basePrice'].map((field) => (
               <input
                 key={field}
                 type={field === 'basePrice' ? 'number' : 'text'}

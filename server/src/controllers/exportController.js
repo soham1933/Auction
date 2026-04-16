@@ -16,7 +16,7 @@ const writeCsv = (rows) => rows.map((row) => row.map(escapeCsv).join(',')).join(
 export const exportPlayersCsv = async (_req, res) => {
   const players = await Player.find().sort({ createdAt: -1 });
   const rows = [
-    ['id', 'name', 'role', 'basePrice', 'status', 'team', 'country', 'imageUrl', 'createdAt'],
+    ['id', 'name', 'role', 'basePrice', 'status', 'team', 'country', 'avatarUrl', 'bannerUrl', 'imageUrl', 'createdAt'],
     ...players.map((player) => [
       player._id.toString(),
       player.name,
@@ -25,6 +25,8 @@ export const exportPlayersCsv = async (_req, res) => {
       player.status,
       player.team || '',
       player.country || '',
+      player.avatarUrl || '',
+      player.bannerUrl || '',
       player.imageUrl || '',
       player.createdAt?.toISOString?.() || ''
     ])

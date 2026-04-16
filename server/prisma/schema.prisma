@@ -10,7 +10,9 @@ datasource db {
 model PlayerImage {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   playerId  String   @unique @db.ObjectId
-  imageUrl  String
+  imageUrl  String?
+  avatarUrl String?
+  bannerUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
