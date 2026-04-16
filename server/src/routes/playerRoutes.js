@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createPlayer,
+  deletePlayer,
   listPlayers,
   updatePlayer
 } from '../controllers/playerController.js';
@@ -11,6 +12,6 @@ const router = Router();
 router.get('/', listPlayers);
 router.post('/', requireAuth, requireAdmin, createPlayer);
 router.put('/:id', requireAuth, requireAdmin, updatePlayer);
+router.delete('/:id', requireAuth, requireAdmin, deletePlayer);
 
 export default router;
-

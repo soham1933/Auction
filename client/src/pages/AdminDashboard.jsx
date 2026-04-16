@@ -15,8 +15,8 @@ const initialPlayer = {
 };
 
 const AdminDashboard = () => {
-  const { user, token, loginAdmin } = useAuth();
-  const { socket, connected } = useSocket(token);
+  const { user, loginAdmin } = useAuth();
+  const { socket, connected } = useSocket();
   const [players, setPlayers] = useState([]);
   const [captains, setCaptains] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -34,6 +34,37 @@ const AdminDashboard = () => {
       setPlayers(data);
     } catch (_error) {
       setPlayers([]);
+    }
+  };
+
+  const downloadCsv = async (endpointPath, fallbackFilename) => {
+    try {
+      const response = await api.get(endpointPath, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+
+      anchor.href = objectUrl;
+      anchor.download = fallbackFilename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Unable to export CSV');
+    }
+  };
+
+  const handleDeletePlayer = async (playerId) => {
+    const confirmDelete = window.confirm('Delete this player? This cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      await api.delete(`/players/${playerId}`);
+      await loadPlayers();
+      setMessage('Player deleted');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Unable to delete player');
     }
   };
 
@@ -211,6 +242,45 @@ const AdminDashboard = () => {
             {message}
           </div>
         )}
+      </section>
+
+      <section className="rounded-[32px] border border-white/10 bg-white/10 p-5 shadow-glow backdrop-blur-md">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/40">Exports</p>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Download CSV</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:justify-end">
+            <button
+              type="button"
+              onClick={() => downloadCsv('/export/players.csv', 'players.csv')}
+              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
+            >
+              Players CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCsv('/export/captains.csv', 'captains.csv')}
+              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
+            >
+              Captains CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCsv('/export/teams.csv', 'teams.csv')}
+              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
+            >
+              Teams CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCsv('/export/auctions.csv', 'auctions.csv')}
+              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
+            >
+              Auctions CSV
+            </button>
+          </div>
+        </div>
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
@@ -398,18 +468,32 @@ const AdminDashboard = () => {
                   <p className="text-sm text-white/60">
                     Base: <span className="font-semibold text-white">{formatPoints(player.basePrice)}</span>
                   </p>
-                  <button
-                    type="button"
-                    disabled={player.status !== 'available'}
-                    onClick={() => startAuction(player._id)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                      player.status !== 'available'
-                        ? 'cursor-not-allowed bg-white/5 text-white/30'
-                        : 'bg-white text-slate-950'
-                    }`}
-                  >
-                    Start
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={player.status !== 'available'}
+                      onClick={() => startAuction(player._id)}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        player.status !== 'available'
+                          ? 'cursor-not-allowed bg-white/5 text-white/30'
+                          : 'bg-white text-slate-950'
+                      }`}
+                    >
+                      Start
+                    </button>
+                    <button
+                      type="button"
+                      disabled={player.status !== 'available'}
+                      onClick={() => handleDeletePlayer(player._id)}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        player.status !== 'available'
+                          ? 'cursor-not-allowed bg-white/5 text-white/30'
+                          : 'border border-white/10 bg-white/10 text-white hover:bg-white/15'
+                      }`}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}

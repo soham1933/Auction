@@ -18,8 +18,8 @@ const defaultAuction = {
 };
 
 const AuctionRoom = () => {
-  const { user, token, loginCaptain, registerCaptain, refreshUser } = useAuth();
-  const { socket, connected } = useSocket(token);
+  const { user, loginCaptain, registerCaptain, refreshUser } = useAuth();
+  const { socket, connected } = useSocket();
   const [auction, setAuction] = useState(defaultAuction);
   const [leaderboard, setLeaderboard] = useState([]);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -29,6 +29,7 @@ const AuctionRoom = () => {
 
   const isCaptain = user?.role === 'captain';
   const minIncrement = 10;
+  const showBidControls = isCaptain && auction.status === 'live' && Boolean(auction.currentPlayer);
 
   useEffect(() => {
     const loadInitial = async () => {
@@ -149,7 +150,7 @@ const AuctionRoom = () => {
   };
 
   return (
-    <div className="space-y-6 pb-40 xl:pb-0">
+    <div className={`space-y-6 ${showBidControls ? 'pb-40 xl:pb-0' : 'pb-28 xl:pb-0'}`}>
       <section className="rounded-[32px] border border-white/10 bg-white/10 p-5 shadow-glow backdrop-blur-md md:p-8">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
@@ -334,14 +335,16 @@ const AuctionRoom = () => {
         onClose={() => setPopupOpen(false)}
       />
 
-      <BidControls
-        connected={connected}
-        disabled={!isCaptain || auction.status !== 'live'}
-        currentBid={auction.currentBid || auction.currentPlayer?.basePrice || 0}
-        minIncrement={minIncrement}
-        onBid={handleBid}
-        budget={user?.budget || 0}
-      />
+      {showBidControls ? (
+        <BidControls
+          connected={connected}
+          disabled={false}
+          currentBid={auction.currentBid || auction.currentPlayer?.basePrice || 0}
+          minIncrement={minIncrement}
+          onBid={handleBid}
+          budget={user?.budget || 0}
+        />
+      ) : null}
     </div>
   );
 };

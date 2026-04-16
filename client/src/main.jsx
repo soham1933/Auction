@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './hooks/useSocket';
 import './index.css';
 
 if ('serviceWorker' in navigator) {
@@ -26,7 +27,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       }}
     >
       <AuthProvider>
-        <App />
+        <SocketProvider>
+          <App />
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

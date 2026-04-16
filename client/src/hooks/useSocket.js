@@ -1,11 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, createElement, useContext, useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
+import { useAuth } from '../context/AuthContext';
 
 const defaultSocketUrl = import.meta.env.DEV
   ? 'http://localhost:5000'
   : 'https://auction-bu05.onrender.com';
 
-export const useSocket = (token) => {
+const SocketContext = createContext(null);
+
+export const SocketProvider = ({ children }) => {
+  const { token } = useAuth();
   const [connected, setConnected] = useState(false);
 
   const socket = useMemo(
@@ -13,7 +17,12 @@ export const useSocket = (token) => {
       io(import.meta.env.VITE_SOCKET_URL || defaultSocketUrl, {
         autoConnect: true,
         transports: ['websocket', 'polling'],
-        auth: token ? { token } : {}
+        auth: token ? { token } : {},
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 500,
+        reconnectionDelayMax: 4000,
+        timeout: 20000
       }),
     [token]
   );
@@ -32,5 +41,13 @@ export const useSocket = (token) => {
     };
   }, [socket]);
 
-  return { socket, connected };
+  return createElement(SocketContext.Provider, { value: { socket, connected } }, children);
+};
+
+export const useSocket = () => {
+  const value = useContext(SocketContext);
+  if (!value) {
+    throw new Error('useSocket must be used within SocketProvider');
+  }
+  return value;
 };

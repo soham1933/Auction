@@ -9,6 +9,7 @@ import authRoutes from './routes/authRoutes.js';
 import playerRoutes from './routes/playerRoutes.js';
 import captainRoutes from './routes/captainRoutes.js';
 import auctionRoutes from './routes/auctionRoutes.js';
+import exportRoutes from './routes/exportRoutes.js';
 import { registerAuctionHandlers } from './sockets/auctionHandler.js';
 
 const app = express();
@@ -56,7 +57,12 @@ const corsOptions = {
 
 const io = new Server(server, {
   cors: corsOptions,
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
+  pingTimeout: 20000,
+  pingInterval: 25000,
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000
+  }
 });
 
 app.use(cors(corsOptions));
@@ -70,6 +76,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/captains', captainRoutes);
 app.use('/api/auction', auctionRoutes);
+app.use('/api/export', exportRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

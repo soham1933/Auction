@@ -3,13 +3,14 @@ import { NavLink } from 'react-router-dom';
 
 const navItems = [
   { to: '/', label: 'Auction' },
+  { to: '/audience', label: 'Audience' },
   { to: '/admin', label: 'Admin' }
 ];
 
 const BottomNav = () => {
   return (
     <nav className="fixed inset-x-4 bottom-4 z-40 rounded-full border border-white/10 bg-white/10 p-2 shadow-glow backdrop-blur xl:hidden">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {navItems.map((item) => (
           <NavLink key={item.to} to={item.to}>
             {({ isActive }) => (
@@ -32,4 +33,3 @@ const BottomNav = () => {
 };
 
 export default BottomNav;
-
