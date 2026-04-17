@@ -5,7 +5,7 @@ import {
   getTeamsOverview,
   listCaptains
 } from '../controllers/captainController.js';
-import uploadCaptainAvatar from '../middleware/upload.js';
+import { uploadCaptainAvatar } from '../middleware/upload.js';
 import { requireAdmin, requireAuth } from '../middleware/auth.js';
 
 const router = Router();
