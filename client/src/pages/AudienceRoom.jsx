@@ -258,7 +258,7 @@ const AudienceRoom = () => {
 
           <div className="mt-6 rounded-[28px] border border-white/10 bg-slate-950/30 p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-white">Bid history</p>
+              <p className="text-sm font-semibold text-white">Live Player Feed</p>
               <span className="text-xs uppercase tracking-[0.3em] text-white/50">Live</span>
             </div>
             {recentBids.length ? (

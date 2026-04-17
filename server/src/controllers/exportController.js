@@ -129,6 +129,7 @@ export const exportAuctionsCsv = async (_req, res) => {
       'highestBidder',
       'soldTo',
       'soldFor',
+      'bidHistory',
       'startedAt',
       'endsAt',
       'createdAt'
@@ -141,6 +142,13 @@ export const exportAuctionsCsv = async (_req, res) => {
       auction.highestBidder?.name || '',
       auction.soldTo?.name || '',
       auction.soldFor || 0,
+      JSON.stringify(
+        (auction.bidHistory || []).map((entry) => ({
+          amount: entry.amount,
+          bidderName: entry.bidderName,
+          timestamp: entry.createdAt || entry.timestamp || entry.time
+        }))
+      ),
       auction.startedAt?.toISOString() || '',
       auction.endsAt?.toISOString() || '',
       auction.createdAt.toISOString()
