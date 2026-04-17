@@ -2,6 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 import { connectDB } from './config/db.js';
 import { seedDemoData } from './config/seed.js';
@@ -14,6 +17,11 @@ import { registerAuctionHandlers } from './sockets/auctionHandler.js';
 
 const app = express();
 const server = http.createServer(app);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsPath = path.join(__dirname, 'uploads');
+fs.mkdirSync(uploadsPath, { recursive: true });
+app.use('/uploads', express.static(uploadsPath));
 const configuredOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
   : [];

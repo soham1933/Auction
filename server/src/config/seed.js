@@ -1,5 +1,5 @@
-import Captain from '../models/Captain.js';
-import Player from '../models/Player.js';
+import bcrypt from 'bcryptjs';
+import { getPrisma } from './prisma.js';
 
 const demoCaptains = [
   { name: 'Mumbai Mavericks', password: 'captain123' },
@@ -54,27 +54,34 @@ const demoPlayers = [
 ];
 
 export const seedDemoData = async () => {
-  const captainCount = await Captain.countDocuments();
-  const playerCount = await Player.countDocuments();
+  const prisma = getPrisma();
+  const captainCount = await prisma.captain.count();
+  const playerCount = await prisma.player.count();
 
   if (captainCount === 0) {
     for (const captain of demoCaptains) {
-      await Captain.create(captain);
+      await prisma.captain.create({
+        data: {
+          name: captain.name,
+          password: await bcrypt.hash(captain.password, 10)
+        }
+      });
     }
     console.log('Seeded demo captains');
-  } else {
-    const captains = await Captain.find();
-
-    for (const captain of captains) {
-      if (captain.password && !captain.password.startsWith('$2')) {
-        captain.password = captain.password;
-        await captain.save();
-      }
-    }
   }
 
   if (playerCount === 0) {
-    await Player.insertMany(demoPlayers);
+    for (const player of demoPlayers) {
+      await prisma.player.create({
+        data: {
+          name: player.name,
+          role: player.role,
+          basePrice: player.basePrice,
+          team: player.team,
+          country: player.country
+        }
+      });
+    }
     console.log('Seeded demo players');
   }
 };

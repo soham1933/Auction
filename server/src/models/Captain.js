@@ -19,6 +19,19 @@ const captainSchema = new mongoose.Schema(
       type: Number,
       default: Number(process.env.DEFAULT_CAPTAIN_BUDGET || 10000)
     },
+    team: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    avatarUrl: {
+      type: String,
+      trim: true
+    },
+    imageUrl: {
+      type: String,
+      trim: true
+    },
     players: [
       {
         type: mongoose.Schema.Types.ObjectId,

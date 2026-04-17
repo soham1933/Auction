@@ -3,19 +3,58 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model PlayerImage {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  playerId  String   @unique @db.ObjectId
+model Captain {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  password          String
+  budget            Int       @default(10000)
+  team              String    @default("")
+  avatarUrl         String?
+  imageUrl          String?
+  totalSpent        Int       @default(0)
+  players           Player[]  @relation("CaptainPlayers")
+  highestBids       Auction[] @relation("AuctionHighestBidder")
+  purchasedAuctions Auction[] @relation("AuctionSoldTo")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Player {
+  id        String    @id @default(uuid())
+  name      String
+  basePrice Int
+  role      String
+  team      String    @default("")
+  country   String    @default("")
   imageUrl  String?
   avatarUrl String?
   bannerUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([playerId])
+  status    String    @default("available")
+  captainId String?   @db.Uuid
+  captain   Captain?  @relation("CaptainPlayers", fields: [captainId], references: [id])
+  auctions  Auction[] @relation("AuctionPlayer")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
+model Auction {
+  id              String    @id @default(uuid())
+  currentPlayerId String?   @db.Uuid
+  currentPlayer   Player?   @relation("AuctionPlayer", fields: [currentPlayerId], references: [id])
+  currentBid      Int       @default(0)
+  highestBidderId String?   @db.Uuid
+  highestBidder   Captain?  @relation("AuctionHighestBidder", fields: [highestBidderId], references: [id])
+  status          String    @default("idle")
+  soldFor         Int       @default(0)
+  soldToId        String?   @db.Uuid
+  soldTo          Captain?  @relation("AuctionSoldTo", fields: [soldToId], references: [id])
+  startedAt       DateTime?
+  endsAt          DateTime?
+  bidHistory      Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}

@@ -2,6 +2,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { formatPoints } from '../utils/currency';
 
 const PlayerPopup = ({ player, auction, open, onClose, imageVariant = 'banner' }) => {
+  if (!open || !player) {
+    return null;
+  }
+
   const playerImageUrl =
     imageVariant === 'avatar'
       ? player.avatarUrl || player.imageUrl || player.bannerUrl

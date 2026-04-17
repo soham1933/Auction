@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/http';
 import { useAuth } from '../context/AuthContext';
@@ -16,7 +16,16 @@ const initialPlayer = {
   imageUrl: ''
 };
 
+const initialCaptain = {
+  name: '',
+  password: '',
+  team: '',
+  avatarFile: null,
+  avatarPreview: ''
+};
+
 const AdminDashboard = () => {
+  const fileInputRef = useRef(null);
   const { user, loginAdmin } = useAuth();
   const { socket, connected } = useSocket();
   const [players, setPlayers] = useState([]);
@@ -27,6 +36,7 @@ const AdminDashboard = () => {
   const [message, setMessage] = useState('');
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [playerForm, setPlayerForm] = useState(initialPlayer);
+  const [captainForm, setCaptainForm] = useState(initialCaptain);
 
   const isAdmin = user?.role === 'admin';
 
@@ -164,6 +174,59 @@ const AdminDashboard = () => {
     }
   };
 
+  const preventDrag = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleCaptainSelectFile = (file) => {
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setCaptainForm((prev) => ({ ...prev, avatarFile: file, avatarPreview: preview }));
+  };
+
+  const handleCaptainFileInput = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleCaptainSelectFile(file);
+    }
+  };
+
+  const handleCaptainDrop = (event) => {
+    preventDrag(event);
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      handleCaptainSelectFile(file);
+    }
+  };
+
+  const handleCaptainCreate = async (event) => {
+    event.preventDefault();
+
+    try {
+      const formData = new FormData();
+      formData.append('name', captainForm.name);
+      formData.append('password', captainForm.password);
+      formData.append('team', captainForm.team);
+
+      if (captainForm.avatarFile) {
+        formData.append('avatar', captainForm.avatarFile);
+      }
+
+      await api.post('/captains', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setCaptainForm(initialCaptain);
+      await loadCaptainsAndTeams();
+      setMessage('Captain added successfully');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Unable to add captain');
+    }
+  };
+
   const startAuction = (playerId) => {
     socket.emit('startAuction', { playerId, duration });
   };
@@ -283,6 +346,86 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="rounded-[32px] border border-white/10 bg-white/10 p-5 shadow-glow backdrop-blur-md">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-gold/70">Captain Accounts</p>
+            <h3 className="mt-2 text-2xl font-semibold text-white">Create a new captain</h3>
+          </div>
+        </div>
+
+        <form onSubmit={handleCaptainCreate} className="mt-6 space-y-4">
+          <div className="grid gap-3 lg:grid-cols-3">
+            <input
+              value={captainForm.name}
+              onChange={(event) =>
+                setCaptainForm((prev) => ({ ...prev, name: event.target.value }))
+              }
+              placeholder="Captain name"
+              className="w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-white outline-none placeholder:text-white/35"
+            />
+            <input
+              type="password"
+              value={captainForm.password}
+              onChange={(event) =>
+                setCaptainForm((prev) => ({ ...prev, password: event.target.value }))
+              }
+              placeholder="Password"
+              className="w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-white outline-none placeholder:text-white/35"
+            />
+            <input
+              value={captainForm.team}
+              onChange={(event) =>
+                setCaptainForm((prev) => ({ ...prev, team: event.target.value }))
+              }
+              placeholder="Team name"
+              className="w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-white outline-none placeholder:text-white/35"
+            />
+          </div>
+
+          <div
+            onDragOver={preventDrag}
+            onDragEnter={preventDrag}
+            onDrop={handleCaptainDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className="relative cursor-pointer rounded-[28px] border-2 border-dashed border-white/20 bg-slate-950/20 p-6 text-center text-white/60 transition hover:border-cyan hover:text-white"
+          >
+            <input
+              ref={fileInputRef}
+              id="captain-avatar-input"
+              type="file"
+              accept="image/*"
+              onChange={handleCaptainFileInput}
+              className="hidden"
+            />
+
+            {captainForm.avatarPreview ? (
+              <img
+                src={captainForm.avatarPreview}
+                alt="Captain avatar preview"
+                className="mx-auto mb-4 h-32 w-32 rounded-full object-cover"
+              />
+            ) : null}
+
+            <p className="text-sm font-medium text-white">
+              {captainForm.avatarPreview
+                ? 'Click or drag a new image to replace the avatar'
+                : 'Drag & drop an avatar image here, or click to choose from your files'}
+            </p>
+            <p className="mt-2 text-xs text-white/40">
+              JPG, PNG, WEBP accepted. Max 5MB.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full rounded-2xl bg-gradient-to-r from-gold to-cyan px-4 py-3 font-semibold text-slate-950"
+          >
+            Create Captain
+          </button>
+        </form>
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">

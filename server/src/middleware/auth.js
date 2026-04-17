@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import Captain from '../models/Captain.js';
+import { getPrisma } from '../config/prisma.js';
 
 const jwtSecret = process.env.JWT_SECRET || 'local-dev-jwt-secret-change-me';
 
@@ -31,14 +31,18 @@ export const requireAuth = async (req, res, next) => {
       return next();
     }
 
-    const captain = await Captain.findById(decoded.id).populate('players');
+    const prisma = getPrisma();
+    const captain = await prisma.captain.findUnique({
+      where: { id: decoded.id },
+      include: { players: true }
+    });
 
     if (!captain) {
       return res.status(401).json({ message: 'Captain not found' });
     }
 
     req.user = {
-      id: captain._id.toString(),
+      id: captain.id,
       name: captain.name,
       role: 'captain',
       budget: captain.budget,
@@ -72,14 +76,15 @@ export const getSocketUser = async (token) => {
       return decoded;
     }
 
-    const captain = await Captain.findById(decoded.id);
+    const prisma = getPrisma();
+    const captain = await prisma.captain.findUnique({ where: { id: decoded.id } });
 
     if (!captain) {
       return null;
     }
 
     return {
-      id: captain._id.toString(),
+      id: captain.id,
       name: captain.name,
       role: 'captain',
       budget: captain.budget,

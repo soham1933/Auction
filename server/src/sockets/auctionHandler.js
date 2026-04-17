@@ -1,6 +1,4 @@
-import Auction from '../models/Auction.js';
-import Captain from '../models/Captain.js';
-import Player from '../models/Player.js';
+import { getPrisma } from '../config/prisma.js';
 import { getSocketUser } from '../middleware/auth.js';
 
 const AUCTION_ROOM = process.env.AUCTION_ROOM || 'global-auction-room';
@@ -30,11 +28,15 @@ const serializeAuction = () => ({
 });
 
 const getLeaderboardPayload = async () => {
-  const captains = await Captain.find().populate('players');
+  const prisma = getPrisma();
+  const captains = await prisma.captain.findMany({
+    include: { players: true },
+    orderBy: { name: 'asc' }
+  });
 
   return captains
     .map((captain) => ({
-      id: captain._id.toString(),
+      id: captain.id,
       name: captain.name,
       budget: captain.budget,
       totalSpent: captain.totalSpent,
@@ -97,11 +99,15 @@ const emitSnapshot = async (io, socket = null) => {
 
 const closeAuctionInternally = async (io, reason = 'closed') => {
   clearAuctionTimer();
+  const prisma = getPrisma();
 
   if (liveAuction.id) {
-    await Auction.findByIdAndUpdate(liveAuction.id, {
-      status: 'closed',
-      endsAt: new Date()
+    await prisma.auction.update({
+      where: { id: liveAuction.id },
+      data: {
+        status: 'closed',
+        endsAt: new Date()
+      }
     });
   }
 
@@ -119,11 +125,15 @@ const closeAuctionInternally = async (io, reason = 'closed') => {
 
 const moveAuctionToAwaitingClose = async (io) => {
   clearAuctionTimer();
+  const prisma = getPrisma();
 
   if (liveAuction.id) {
-    await Auction.findByIdAndUpdate(liveAuction.id, {
-      status: 'awaiting-close',
-      endsAt: new Date()
+    await prisma.auction.update({
+      where: { id: liveAuction.id },
+      data: {
+        status: 'awaiting-close',
+        endsAt: new Date()
+      }
     });
   }
 
@@ -174,7 +184,8 @@ export const registerAuctionHandlers = (io) => {
           return;
         }
 
-        const player = await Player.findById(playerId);
+        const prisma = getPrisma();
+        const player = await prisma.player.findUnique({ where: { id: playerId } });
 
         if (!player) {
           socket.emit('auctionError', 'Player not found');
@@ -186,18 +197,26 @@ export const registerAuctionHandlers = (io) => {
         const startTime = new Date();
         const endTime = new Date(startTime.getTime() + Number(duration) * 1000);
 
-        const auctionDoc = await Auction.create({
-          currentPlayer: player._id,
-          currentBid: player.basePrice,
-          highestBidder: null,
-          status: 'live',
-          startedAt: startTime,
-          endsAt: endTime
+        const auctionDoc = await prisma.auction.create({
+          data: {
+            currentPlayerId: player.id,
+            currentBid: player.basePrice,
+            status: 'live',
+            startedAt: startTime,
+            endsAt: endTime,
+            bidHistory: [
+              {
+                amount: player.basePrice,
+                bidderName: 'Opening Price',
+                createdAt: startTime.toISOString()
+              }
+            ]
+          }
         });
 
         liveAuction = {
-          id: auctionDoc._id.toString(),
-          currentPlayer: player.toObject(),
+          id: auctionDoc.id,
+          currentPlayer: player,
           currentBid: player.basePrice,
           highestBidder: null,
           status: 'live',
@@ -238,14 +257,12 @@ export const registerAuctionHandlers = (io) => {
         const minimumAllowed = liveAuction.currentBid + MIN_BID_INCREMENT;
 
         if (Number.isNaN(bidAmount) || bidAmount < minimumAllowed) {
-          socket.emit(
-            'auctionError',
-            `Bid must be at least ${minimumAllowed}`
-          );
+          socket.emit('auctionError', `Bid must be at least ${minimumAllowed}`);
           return;
         }
 
-        const captain = await Captain.findById(socket.data.user.id);
+        const prisma = getPrisma();
+        const captain = await prisma.captain.findUnique({ where: { id: socket.data.user.id } });
 
         if (!captain) {
           socket.emit('auctionError', 'Captain account not found');
@@ -259,7 +276,7 @@ export const registerAuctionHandlers = (io) => {
 
         liveAuction.currentBid = bidAmount;
         liveAuction.highestBidder = {
-          id: captain._id.toString(),
+          id: captain.id,
           name: captain.name
         };
         liveAuction.bidHistory = [
@@ -271,9 +288,12 @@ export const registerAuctionHandlers = (io) => {
           ...liveAuction.bidHistory
         ].slice(0, 12);
 
-        await Auction.findByIdAndUpdate(liveAuction.id, {
-          currentBid: bidAmount,
-          highestBidder: captain._id
+        await prisma.auction.update({
+          where: { id: liveAuction.id },
+          data: {
+            currentBid: bidAmount,
+            highestBidderId: captain.id
+          }
         });
 
         io.to(AUCTION_ROOM).emit('updateBid', serializeAuction());
@@ -295,9 +315,10 @@ export const registerAuctionHandlers = (io) => {
         }
 
         clearAuctionTimer();
+        const prisma = getPrisma();
 
-        const captain = await Captain.findById(liveAuction.highestBidder.id);
-        const player = await Player.findById(liveAuction.currentPlayer._id);
+        const captain = await prisma.captain.findUnique({ where: { id: liveAuction.highestBidder.id } });
+        const player = await prisma.player.findUnique({ where: { id: liveAuction.currentPlayer.id } });
 
         if (!captain || !player) {
           socket.emit('auctionError', 'Auction data is no longer valid');
@@ -309,26 +330,40 @@ export const registerAuctionHandlers = (io) => {
           return;
         }
 
-        captain.budget -= liveAuction.currentBid;
-        captain.totalSpent += liveAuction.currentBid;
-        captain.players.push(player._id);
-        await captain.save();
+        await prisma.captain.update({
+          where: { id: captain.id },
+          data: {
+            budget: captain.budget - liveAuction.currentBid,
+            totalSpent: captain.totalSpent + liveAuction.currentBid,
+            players: {
+              connect: { id: player.id }
+            }
+          }
+        });
 
-        player.status = 'sold';
-        await player.save();
+        await prisma.player.update({
+          where: { id: player.id },
+          data: {
+            status: 'sold',
+            captainId: captain.id
+          }
+        });
 
-        await Auction.findByIdAndUpdate(liveAuction.id, {
-          status: 'sold',
-          soldFor: liveAuction.currentBid,
-          soldTo: captain._id,
-          endsAt: new Date()
+        await prisma.auction.update({
+          where: { id: liveAuction.id },
+          data: {
+            status: 'sold',
+            soldFor: liveAuction.currentBid,
+            soldToId: captain.id,
+            endsAt: new Date()
+          }
         });
 
         io.to(AUCTION_ROOM).emit('playerSold', {
           player,
           soldFor: liveAuction.currentBid,
           soldTo: {
-            id: captain._id.toString(),
+            id: captain.id,
             name: captain.name
           }
         });

@@ -1,6 +1,4 @@
-import Captain from '../models/Captain.js';
-import Player from '../models/Player.js';
-import Auction from '../models/Auction.js';
+import { getPrisma } from '../config/prisma.js';
 
 const escapeCsv = (value) => {
   if (value === null || value === undefined) return '';
@@ -14,11 +12,15 @@ const escapeCsv = (value) => {
 const writeCsv = (rows) => rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
 
 export const exportPlayersCsv = async (_req, res) => {
-  const players = await Player.find().sort({ createdAt: -1 });
+  const prisma = getPrisma();
+  const players = await prisma.player.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+
   const rows = [
     ['id', 'name', 'role', 'basePrice', 'status', 'team', 'country', 'avatarUrl', 'bannerUrl', 'imageUrl', 'createdAt'],
     ...players.map((player) => [
-      player._id.toString(),
+      player.id,
       player.name,
       player.role,
       player.basePrice,
@@ -28,7 +30,7 @@ export const exportPlayersCsv = async (_req, res) => {
       player.avatarUrl || '',
       player.bannerUrl || '',
       player.imageUrl || '',
-      player.createdAt?.toISOString?.() || ''
+      player.createdAt.toISOString()
     ])
   ];
 
@@ -38,11 +40,16 @@ export const exportPlayersCsv = async (_req, res) => {
 };
 
 export const exportCaptainsCsv = async (_req, res) => {
-  const captains = await Captain.find().populate('players').sort({ name: 1 });
+  const prisma = getPrisma();
+  const captains = await prisma.captain.findMany({
+    include: { players: true },
+    orderBy: { name: 'asc' }
+  });
+
   const rows = [
     ['id', 'name', 'budget', 'totalSpent', 'playersBought', 'playerNames'],
     ...captains.map((captain) => [
-      captain._id.toString(),
+      captain.id,
       captain.name,
       captain.budget,
       captain.totalSpent,
@@ -57,7 +64,12 @@ export const exportCaptainsCsv = async (_req, res) => {
 };
 
 export const exportTeamsCsv = async (_req, res) => {
-  const captains = await Captain.find().populate('players').sort({ name: 1 });
+  const prisma = getPrisma();
+  const captains = await prisma.captain.findMany({
+    include: { players: true },
+    orderBy: { name: 'asc' }
+  });
+
   const rows = [
     [
       'captainId',
@@ -73,15 +85,15 @@ export const exportTeamsCsv = async (_req, res) => {
     ],
     ...captains.flatMap((captain) => {
       if (!captain.players.length) {
-        return [[captain._id.toString(), captain.name, captain.budget, captain.totalSpent, '', '', '', '', '', '']];
+        return [[captain.id, captain.name, captain.budget, captain.totalSpent, '', '', '', '', '', '']];
       }
 
       return captain.players.map((player) => [
-        captain._id.toString(),
+        captain.id,
         captain.name,
         captain.budget,
         captain.totalSpent,
-        player._id.toString(),
+        player.id,
         player.name,
         player.role,
         player.basePrice,
@@ -97,10 +109,16 @@ export const exportTeamsCsv = async (_req, res) => {
 };
 
 export const exportAuctionsCsv = async (_req, res) => {
-  const auctions = await Auction.find()
-    .populate('currentPlayer highestBidder soldTo')
-    .sort({ createdAt: -1 })
-    .limit(500);
+  const prisma = getPrisma();
+  const auctions = await prisma.auction.findMany({
+    include: {
+      currentPlayer: true,
+      highestBidder: true,
+      soldTo: true
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 500
+  });
 
   const rows = [
     [
@@ -116,16 +134,16 @@ export const exportAuctionsCsv = async (_req, res) => {
       'createdAt'
     ],
     ...auctions.map((auction) => [
-      auction._id.toString(),
+      auction.id,
       auction.status,
       auction.currentPlayer?.name || '',
       auction.currentBid,
       auction.highestBidder?.name || '',
       auction.soldTo?.name || '',
       auction.soldFor || 0,
-      auction.startedAt?.toISOString?.() || '',
-      auction.endsAt?.toISOString?.() || '',
-      auction.createdAt?.toISOString?.() || ''
+      auction.startedAt?.toISOString() || '',
+      auction.endsAt?.toISOString() || '',
+      auction.createdAt.toISOString()
     ])
   ];
 

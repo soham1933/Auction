@@ -1,15 +1,16 @@
-import Captain from '../models/Captain.js';
+import bcrypt from 'bcryptjs';
+import { getPrisma } from '../config/prisma.js';
 import { signToken } from '../middleware/auth.js';
 
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@auction.com';
 const adminPassword = process.env.ADMIN_PASSWORD || 'supersecurepassword';
 
 const sanitizeCaptain = (captain) => ({
-  id: captain._id,
+  id: captain.id,
   name: captain.name,
   budget: captain.budget,
   totalSpent: captain.totalSpent,
-  players: captain.players
+  players: captain.players || []
 });
 
 export const registerCaptain = async (req, res) => {
@@ -19,14 +20,26 @@ export const registerCaptain = async (req, res) => {
     return res.status(400).json({ message: 'Name and password are required' });
   }
 
-  const existingCaptain = await Captain.findOne({ name: name.trim() });
+  const prisma = getPrisma();
+  const existingCaptain = await prisma.captain.findUnique({
+    where: { name: name.trim() }
+  });
 
   if (existingCaptain) {
     return res.status(400).json({ message: 'Captain name already exists' });
   }
 
-  const captain = await Captain.create({ name: name.trim(), password: password.trim() });
-  const token = signToken({ id: captain._id, role: 'captain' });
+  const hashedPassword = await bcrypt.hash(password.trim(), 10);
+
+  const captain = await prisma.captain.create({
+    data: {
+      name: name.trim(),
+      password: hashedPassword
+    },
+    include: { players: true }
+  });
+
+  const token = signToken({ id: captain.id, role: 'captain' });
 
   return res.status(201).json({
     token,
@@ -41,19 +54,23 @@ export const loginCaptain = async (req, res) => {
     return res.status(400).json({ message: 'Name and password are required' });
   }
 
-  const captain = await Captain.findOne({ name: name.trim() }).populate('players');
+  const prisma = getPrisma();
+  const captain = await prisma.captain.findUnique({
+    where: { name: name.trim() },
+    include: { players: true }
+  });
 
   if (!captain) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
 
-  const isValid = await captain.comparePassword(password);
+  const isValid = await bcrypt.compare(password, captain.password);
 
   if (!isValid) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
 
-  const token = signToken({ id: captain._id, role: 'captain' });
+  const token = signToken({ id: captain.id, role: 'captain' });
 
   return res.json({
     token,
@@ -95,7 +112,11 @@ export const getCurrentUser = async (req, res) => {
     return res.json({ user: req.user });
   }
 
-  const captain = await Captain.findById(req.user.id).populate('players');
+  const prisma = getPrisma();
+  const captain = await prisma.captain.findUnique({
+    where: { id: req.user.id },
+    include: { players: true }
+  });
 
   if (!captain) {
     return res.status(404).json({ message: 'Captain not found' });
