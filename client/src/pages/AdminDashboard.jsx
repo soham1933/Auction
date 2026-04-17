@@ -13,7 +13,9 @@ const initialPlayer = {
   country: '',
   avatarUrl: '',
   bannerUrl: '',
-  imageUrl: ''
+  imageUrl: '',
+  avatarFile: null,
+  avatarPreview: ''
 };
 
 const initialCaptain = {
@@ -36,6 +38,7 @@ const AdminDashboard = () => {
   const [message, setMessage] = useState('');
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [playerForm, setPlayerForm] = useState(initialPlayer);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [captainForm, setCaptainForm] = useState(initialCaptain);
 
   const isAdmin = user?.role === 'admin';
@@ -158,25 +161,72 @@ const AdminDashboard = () => {
     }
   };
 
-  const handlePlayerCreate = async (event) => {
+  const handlePlayerSubmit = async (event) => {
     event.preventDefault();
 
     try {
-      await api.post('/players', {
-        ...playerForm,
-        basePrice: Number(playerForm.basePrice)
-      });
+      const formData = new FormData();
+      formData.append('name', playerForm.name);
+      formData.append('role', playerForm.role);
+      formData.append('team', playerForm.team);
+      formData.append('country', playerForm.country);
+      formData.append('basePrice', String(Number(playerForm.basePrice) || 0));
+      formData.append('avatarUrl', playerForm.avatarUrl);
+      formData.append('bannerUrl', playerForm.bannerUrl);
+      formData.append('imageUrl', playerForm.imageUrl);
+
+      if (playerForm.avatarFile) {
+        formData.append('avatar', playerForm.avatarFile);
+      }
+
+      if (selectedPlayer) {
+        await api.put(`/players/${selectedPlayer.id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        setMessage('Player updated successfully');
+      } else {
+        await api.post('/players', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        setMessage('Player added to the auction list');
+      }
+
       setPlayerForm(initialPlayer);
+      setSelectedPlayer(null);
       await loadPlayers();
-      setMessage('Player added to the auction list');
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Unable to add player');
+      setMessage(error.response?.data?.message || 'Unable to save player');
     }
   };
 
   const preventDrag = (event) => {
     event.preventDefault();
     event.stopPropagation();
+  };
+
+  const handlePlayerSelectFile = (file) => {
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setPlayerForm((prev) => ({ ...prev, avatarFile: file, avatarPreview: preview }));
+  };
+
+  const handlePlayerFileInput = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handlePlayerSelectFile(file);
+    }
+  };
+
+  const handlePlayerDrop = (event) => {
+    preventDrag(event);
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      handlePlayerSelectFile(file);
+    }
   };
 
   const handleCaptainSelectFile = (file) => {
@@ -554,10 +604,36 @@ const AdminDashboard = () => {
             </motion.button>
           </div>
 
-          <form onSubmit={handlePlayerCreate} className="mt-6 space-y-3">
+          <form onSubmit={handlePlayerSubmit} className="mt-6 space-y-3">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gold/70">Add Player</p>
               <h3 className="mt-2 text-xl font-semibold text-white">Create auction inventory</h3>
+            </div>
+            <div
+              onDrop={handlePlayerDrop}
+              onDragOver={preventDrag}
+              onDragEnter={preventDrag}
+              className="rounded-3xl border border-dashed border-white/25 bg-slate-950/20 p-4 text-white"
+            >
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-3 text-center text-sm text-white/70">
+                <span>Add player photo</span>
+                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-2 text-white/80">
+                  Drag & drop or click to choose
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePlayerFileInput}
+                  className="hidden"
+                />
+                {playerForm.avatarPreview && (
+                  <img
+                    src={playerForm.avatarPreview}
+                    alt="Player preview"
+                    className="mt-3 h-28 w-28 rounded-2xl object-cover"
+                  />
+                )}
+              </label>
             </div>
             {['name', 'role', 'team', 'country', 'avatarUrl', 'bannerUrl', 'imageUrl', 'basePrice'].map((field) => (
               <input
@@ -571,12 +647,26 @@ const AdminDashboard = () => {
                 className="w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-white capitalize outline-none placeholder:text-white/35"
               />
             ))}
-            <button
-              type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-cyan to-mint px-4 py-3 font-semibold text-slate-950"
-            >
-              Save Player
-            </button>
+            <div className="grid gap-3 md:grid-cols-2">
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-gradient-to-r from-cyan to-mint px-4 py-3 font-semibold text-slate-950"
+              >
+                {selectedPlayer ? 'Update Player' : 'Save Player'}
+              </button>
+              {selectedPlayer && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPlayer(null);
+                    setPlayerForm(initialPlayer);
+                  }}
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 font-semibold text-white"
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
           </form>
         </section>
 
@@ -592,7 +682,7 @@ const AdminDashboard = () => {
             {players.map((player) => (
               <motion.div
                 layout
-                key={player._id}
+                key={player.id}
                 whileHover={{ y: -2 }}
                 className="rounded-[28px] border border-white/10 bg-slate-950/30 p-4"
               >
@@ -617,7 +707,7 @@ const AdminDashboard = () => {
                     <button
                       type="button"
                       disabled={player.status !== 'available'}
-                      onClick={() => startAuction(player._id)}
+                      onClick={() => startAuction(player.id)}
                       className={`rounded-full px-4 py-2 text-sm font-semibold ${
                         player.status !== 'available'
                           ? 'cursor-not-allowed bg-white/5 text-white/30'
@@ -629,7 +719,7 @@ const AdminDashboard = () => {
                     <button
                       type="button"
                       disabled={player.status !== 'available'}
-                      onClick={() => handleDeletePlayer(player._id)}
+                      onClick={() => handleDeletePlayer(player.id)}
                       className={`rounded-full px-4 py-2 text-sm font-semibold ${
                         player.status !== 'available'
                           ? 'cursor-not-allowed bg-white/5 text-white/30'
@@ -637,6 +727,27 @@ const AdminDashboard = () => {
                       }`}
                     >
                       Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlayer(player);
+                        setPlayerForm({
+                          name: player.name || '',
+                          role: player.role || '',
+                          basePrice: player.basePrice?.toString() || '',
+                          team: player.team || '',
+                          country: player.country || '',
+                          avatarUrl: player.avatarUrl || '',
+                          bannerUrl: player.bannerUrl || '',
+                          imageUrl: player.imageUrl || '',
+                          avatarFile: null,
+                          avatarPreview: player.avatarUrl || ''
+                        });
+                      }}
+                      className="rounded-full px-4 py-2 text-sm font-semibold border border-white/10 bg-white/10 text-white hover:bg-white/15"
+                    >
+                      Edit
                     </button>
                   </div>
                 </div>
@@ -667,7 +778,7 @@ const AdminDashboard = () => {
           <div className="mt-5 space-y-3">
             {captains.map((captain) => (
               <div
-                key={captain._id}
+                key={captain.id}
                 className="rounded-3xl border border-white/10 bg-slate-950/30 p-4"
               >
                 <div className="flex items-center justify-between gap-3">
@@ -726,7 +837,7 @@ const AdminDashboard = () => {
           <div className="mt-5 space-y-3">
             {players.map((player) => (
               <div
-                key={player._id}
+                key={player.id}
                 className="rounded-3xl border border-white/10 bg-slate-950/30 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -789,7 +900,7 @@ const AdminDashboard = () => {
                 <div className="mt-3 space-y-2">
                   {team.players.map((player) => (
                     <div
-                      key={player._id}
+                      key={player.id}
                       className="rounded-2xl bg-white/5 px-3 py-3 text-sm text-white/75"
                     >
                       <div className="flex items-start justify-between gap-3">

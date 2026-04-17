@@ -26,13 +26,13 @@ if (fs.existsSync(rootEnvPath)) {
   const result = dotenv.config({ path: rootEnvPath });
   if (result.error) throw result.error;
   loadedEnvPath = rootEnvPath;
-} else if (process.env.NODE_ENV === 'production') {
-  throw new Error('Missing server/.env in production. Create the file and set DATABASE_URL, JWT_SECRET, and other required environment variables.');
+} else if (process.env.DATABASE_URL) {
+  loadedEnvPath = 'process.env';
 } else if (fs.existsSync(rootEnvExamplePath)) {
   const result = dotenv.config({ path: rootEnvExamplePath });
   if (result.error) throw result.error;
   loadedEnvPath = rootEnvExamplePath;
-  console.warn('Loaded server/.env.example because server/.env was not found. Create a real .env for production.');
+  console.warn('Loaded server/.env.example because server/.env and DATABASE_URL were not found. This is for convenience only; set real production environment variables in server/.env or Render environment settings.');
 } else {
   const result = dotenv.config();
   if (result.error) throw result.error;

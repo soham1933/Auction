@@ -10,15 +10,20 @@ export const listPlayers = async (_req, res) => {
 
 export const createPlayer = async (req, res) => {
   const prisma = getPrisma();
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const imageUrl = req.file
+    ? `${origin}/uploads/player-images/${req.file.filename}`
+    : null;
+
   const playerData = {
     name: req.body.name,
     role: req.body.role,
     basePrice: Number(req.body.basePrice) || 0,
     team: req.body.team || '',
     country: req.body.country || '',
-    avatarUrl: req.body.avatarUrl || '',
+    avatarUrl: imageUrl || req.body.avatarUrl || '',
     bannerUrl: req.body.bannerUrl || '',
-    imageUrl: req.body.imageUrl || '',
+    imageUrl: imageUrl || req.body.imageUrl || '',
     status: req.body.status || 'available'
   };
 
@@ -34,15 +39,20 @@ export const updatePlayer = async (req, res) => {
     return res.status(404).json({ message: 'Player not found' });
   }
 
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const imageUrl = req.file
+    ? `${origin}/uploads/player-images/${req.file.filename}`
+    : null;
+
   const updatedData = {
     name: req.body.name ?? player.name,
     role: req.body.role ?? player.role,
     basePrice: req.body.basePrice !== undefined ? Number(req.body.basePrice) : player.basePrice,
     team: req.body.team ?? player.team,
     country: req.body.country ?? player.country,
-    avatarUrl: req.body.avatarUrl ?? player.avatarUrl,
+    avatarUrl: imageUrl ?? req.body.avatarUrl ?? player.avatarUrl,
     bannerUrl: req.body.bannerUrl ?? player.bannerUrl,
-    imageUrl: req.body.imageUrl ?? player.imageUrl,
+    imageUrl: imageUrl ?? req.body.imageUrl ?? player.imageUrl,
     status: req.body.status ?? player.status
   };
 
