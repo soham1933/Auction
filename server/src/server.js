@@ -42,6 +42,7 @@ if (fs.existsSync(rootEnvPath)) {
 console.log(`Loaded env from: ${loadedEnvPath}`);
 
 const app = express();
+app.set('trust proxy', true);
 const server = http.createServer(app);
 const uploadsPath = path.join(__dirname, 'uploads');
 fs.mkdirSync(uploadsPath, { recursive: true });
