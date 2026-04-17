@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
@@ -15,10 +15,34 @@ import auctionRoutes from './routes/auctionRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import { registerAuctionHandlers } from './sockets/auctionHandler.js';
 
-const app = express();
-const server = http.createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootEnvPath = path.join(__dirname, '../.env');
+const rootEnvExamplePath = path.join(__dirname, '../.env.example');
+
+let loadedEnvPath = null;
+
+if (fs.existsSync(rootEnvPath)) {
+  const result = dotenv.config({ path: rootEnvPath });
+  if (result.error) throw result.error;
+  loadedEnvPath = rootEnvPath;
+} else if (process.env.NODE_ENV === 'production') {
+  throw new Error('Missing server/.env in production. Create the file and set DATABASE_URL, JWT_SECRET, and other required environment variables.');
+} else if (fs.existsSync(rootEnvExamplePath)) {
+  const result = dotenv.config({ path: rootEnvExamplePath });
+  if (result.error) throw result.error;
+  loadedEnvPath = rootEnvExamplePath;
+  console.warn('Loaded server/.env.example because server/.env was not found. Create a real .env for production.');
+} else {
+  const result = dotenv.config();
+  if (result.error) throw result.error;
+  loadedEnvPath = '.env (default path lookup)';
+}
+
+console.log(`Loaded env from: ${loadedEnvPath}`);
+
+const app = express();
+const server = http.createServer(app);
 const uploadsPath = path.join(__dirname, 'uploads');
 fs.mkdirSync(uploadsPath, { recursive: true });
 app.use('/uploads', express.static(uploadsPath));
@@ -106,6 +130,15 @@ connectDB()
     return seedDemoData();
   })
   .then(() => {
+    server.on('error', (error) => {
+      if (error?.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use. Stop the other process or set a different PORT in server/.env.`);
+        process.exit(1);
+      }
+      console.error('Server error', error);
+      process.exit(1);
+    });
+
     server.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });

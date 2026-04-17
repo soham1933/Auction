@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Captain {
-  id                String    @id @default(uuid())
+  id                String    @id @default(uuid()) @db.Uuid
   name              String    @unique
   password          String
   budget            Int       @default(10000)
@@ -24,7 +24,7 @@ model Captain {
 }
 
 model Player {
-  id        String    @id @default(uuid())
+  id        String    @id @default(uuid()) @db.Uuid
   name      String
   basePrice Int
   role      String
@@ -42,7 +42,7 @@ model Player {
 }
 
 model Auction {
-  id              String    @id @default(uuid())
+  id              String    @id @default(uuid()) @db.Uuid
   currentPlayerId String?   @db.Uuid
   currentPlayer   Player?   @relation("AuctionPlayer", fields: [currentPlayerId], references: [id])
   currentBid      Int       @default(0)
