@@ -1,5 +1,6 @@
 import { getPrisma } from '../config/prisma.js';
 import { getSocketUser } from '../middleware/auth.js';
+import auctionEvents from '../events/auctionEvents.js';
 
 const AUCTION_ROOM = process.env.AUCTION_ROOM || 'global-auction-room';
 const MIN_BID_INCREMENT = Number(process.env.MIN_BID_INCREMENT || 100);
@@ -165,6 +166,13 @@ const startTimer = (io) => {
 };
 
 export const registerAuctionHandlers = (io) => {
+  auctionEvents.on('playerUpdated', async (updatedPlayer) => {
+    if (liveAuction.currentPlayer?.id === updatedPlayer.id) {
+      liveAuction.currentPlayer = updatedPlayer;
+      io.to(AUCTION_ROOM).emit('playerUpdated', updatedPlayer);
+    }
+  });
+
   io.on('connection', async (socket) => {
     const token = socket.handshake.auth?.token;
     socket.data.user = await getSocketUser(token);

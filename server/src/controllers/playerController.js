@@ -1,4 +1,5 @@
 import { getPrisma } from '../config/prisma.js';
+import auctionEvents from '../events/auctionEvents.js';
 
 export const listPlayers = async (_req, res) => {
   const prisma = getPrisma();
@@ -60,6 +61,8 @@ export const updatePlayer = async (req, res) => {
     where: { id: req.params.id },
     data: updatedData
   });
+
+  auctionEvents.emit('playerUpdated', updatedPlayer);
 
   return res.json(updatedPlayer);
 };

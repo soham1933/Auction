@@ -93,6 +93,11 @@ const AudienceRoom = () => {
     const onTimerUpdate = ({ timeLeft, status }) =>
       setAuction((prev) => ({ ...prev, timeLeft, status: status || prev.status }));
     const onError = (errorMessage) => setMessage(errorMessage);
+    const onPlayerUpdated = (updatedPlayer) => {
+      setAuction((prev) =>
+        prev.currentPlayer?.id === updatedPlayer.id ? { ...prev, currentPlayer: updatedPlayer } : prev
+      );
+    };
 
     socket.on('snapshot', onSnapshot);
     socket.on('startAuction', onStartAuction);
@@ -102,6 +107,7 @@ const AudienceRoom = () => {
     socket.on('auctionClosed', onAuctionClosed);
     socket.on('leaderboardUpdate', onLeaderboardUpdate);
     socket.on('timerUpdate', onTimerUpdate);
+    socket.on('playerUpdated', onPlayerUpdated);
     socket.on('auctionError', onError);
 
     return () => {
@@ -113,6 +119,7 @@ const AudienceRoom = () => {
       socket.off('auctionClosed', onAuctionClosed);
       socket.off('leaderboardUpdate', onLeaderboardUpdate);
       socket.off('timerUpdate', onTimerUpdate);
+      socket.off('playerUpdated', onPlayerUpdated);
       socket.off('auctionError', onError);
     };
   }, [socket]);
@@ -256,31 +263,51 @@ const AudienceRoom = () => {
             )}
           </AnimatePresence>
 
-          <div className="mt-6 rounded-[28px] border border-white/10 bg-slate-950/30 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-white">Live Player Feed</p>
-              <span className="text-xs uppercase tracking-[0.3em] text-white/50">Live</span>
-            </div>
-            {recentBids.length ? (
-              <div className="mt-4 space-y-3">
-                {recentBids.map((bid, index) => (
-                  <motion.div
-                    key={`${bid.timestamp}-${index}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-3xl border border-white/10 bg-white/5 p-3"
-                  >
-                    <p className="text-sm text-white/70">{bid.bidderName || bid.bidder?.name || 'Anonymous'} raised</p>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-lg font-semibold text-white">{formatPoints(bid.amount || bid.value || bid.bid)}</span>
-                      <span className="text-xs uppercase tracking-[0.35em] text-white/40">{new Date(bid.timestamp || bid.time || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+          <div className="mt-6 rounded-[28px] border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.25em] text-gold/70">Live Player Feed</p>
+            <h4 className="mt-2 text-xl font-semibold text-white">{auction.currentPlayer?.name || 'No active player'}</h4>
+            {auction.currentPlayer ? (
+              <p className="mt-1 text-sm text-white/60">
+                {auction.currentPlayer.role} • Base {formatPoints(auction.currentPlayer.basePrice)}
+              </p>
             ) : (
-              <p className="mt-4 text-sm text-white/60">No bids have been placed yet.</p>
+              <p className="mt-1 text-sm text-white/50">Waiting for the next player to go live.</p>
             )}
+
+            <div className="mt-4 space-y-3">
+              {recentBids.length ? (
+                recentBids.map((entry, index) => {
+                  const previousAmount = recentBids[index + 1]?.amount ?? auction.currentPlayer?.basePrice ?? 0;
+                  const delta = entry.amount - previousAmount;
+
+                  return (
+                    <motion.div
+                      key={`${entry.createdAt || entry.timestamp}-${entry.amount}-${index}`}
+                      initial={{ opacity: 0, x: 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3"
+                    >
+                      <div>
+                        <p className="font-semibold text-white">{entry.bidderName || entry.bidder?.name || 'Anonymous'}</p>
+                        <p className="text-sm text-white/50">
+                          {new Date(entry.createdAt || entry.timestamp || Date.now()).toLocaleTimeString('en-IN')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-white">{formatPoints(entry.amount || entry.value || entry.bid)}</p>
+                        <p className={`text-sm ${delta > 0 ? 'text-mint' : 'text-white/40'}`}>
+                          {delta > 0 ? `+${formatPoints(delta)}` : 'Opening'}
+                        </p>
+                      </div>
+                    </motion.div>
+                  );
+                })
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/50">
+                  Bid updates will appear here live as captains raise the price.
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
